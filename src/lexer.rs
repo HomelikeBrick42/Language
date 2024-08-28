@@ -117,9 +117,9 @@ impl<'source> Lexer<'source> {
             .map(|&(pos, _)| pos)
             .unwrap_or(self.source.len());
 
-        self.location.column = self.location.column.checked_add(1).unwrap();
+        self.location.column = self.location.column.saturating_add(1);
         if c == '\n' {
-            self.location.line = self.location.line.checked_add(1).unwrap();
+            self.location.line = self.location.line.saturating_add(1);
             self.location.column = NonZero::<usize>::MIN;
         }
 
