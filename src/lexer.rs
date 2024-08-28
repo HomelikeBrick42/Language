@@ -1,22 +1,24 @@
+use crate::INTERNER;
 use derive_more::derive::Display;
+use lasso::Spur;
 use std::{iter::Peekable, num::NonZero, str::CharIndices};
 use thiserror::Error;
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
-#[display("{filepath}:{line}:{column}")]
-pub struct Location<'filepath> {
-    pub filepath: &'filepath str,
+#[display("{}:{line}:{column}", &INTERNER[*filepath])]
+pub struct Location {
+    pub filepath: Spur,
     pub position: usize,
     pub line: NonZero<usize>,
     pub column: NonZero<usize>,
 }
 
 #[derive(Debug, Display, Clone, PartialEq, Eq)]
-pub enum TokenKind<'source> {
+pub enum TokenKind {
     #[display("{{end of file}}")]
     EOF,
-    #[display("{_0}")]
-    Name(&'source str),
+    #[display("{}", &INTERNER[*_0])]
+    Name(Spur),
     #[display("{_0}")]
     Integer(u64),
     #[display("let")]
@@ -54,9 +56,9 @@ pub enum TokenKind<'source> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token<'filepath, 'source> {
-    pub kind: TokenKind<'source>,
-    pub location: Location<'filepath>,
+pub struct Token {
+    pub kind: TokenKind,
+    pub location: Location,
 }
 
 #[derive(Debug, Error)]
@@ -71,20 +73,20 @@ pub enum LexerErrorKind {
 
 #[derive(Debug, Error)]
 #[error("{location}: {kind}")]
-pub struct LexerError<'filepath> {
+pub struct LexerError {
     pub kind: LexerErrorKind,
-    pub location: Location<'filepath>,
+    pub location: Location,
 }
 
 #[derive(Debug, Clone)]
-pub struct Lexer<'filepath, 'source> {
-    location: Location<'filepath>,
+pub struct Lexer<'source> {
+    location: Location,
     source: &'source str,
     chars: Peekable<CharIndices<'source>>,
 }
 
-impl<'filepath, 'source> Lexer<'filepath, 'source> {
-    pub fn new(filepath: &'filepath str, source: &'source str) -> Self {
+impl<'source> Lexer<'source> {
+    pub fn new(filepath: Spur, source: &'source str) -> Self {
         Self {
             location: Location {
                 filepath,
@@ -97,7 +99,7 @@ impl<'filepath, 'source> Lexer<'filepath, 'source> {
         }
     }
 
-    pub fn location(&self) -> Location<'filepath> {
+    pub fn location(&self) -> Location {
         self.location
     }
 
@@ -124,11 +126,11 @@ impl<'filepath, 'source> Lexer<'filepath, 'source> {
         Some(c)
     }
 
-    pub fn peek_token(&self) -> Result<Token<'filepath, 'source>, LexerError<'filepath>> {
+    pub fn peek_token(&self) -> Result<Token, LexerError> {
         self.clone().next_token()
     }
 
-    pub fn next_token(&mut self) -> Result<Token<'filepath, 'source>, LexerError<'filepath>> {
+    pub fn next_token(&mut self) -> Result<Token, LexerError> {
         loop {
             let start_location = self.location;
             break Ok(Token {
@@ -168,7 +170,7 @@ impl<'filepath, 'source> Lexer<'filepath, 'source> {
                             "let" => TokenKind::Let,
                             "fn" => TokenKind::Fn,
                             "return" => TokenKind::Return,
-                            name => TokenKind::Name(name),
+                            name => TokenKind::Name(INTERNER.get_or_intern(name)),
                         }
                     }
 
@@ -228,18 +230,5 @@ impl<'filepath, 'source> Lexer<'filepath, 'source> {
                 },
             });
         }
-    }
-
-    pub fn tokens_iter(
-        &mut self,
-    ) -> impl Iterator<Item = Result<Token<'filepath, 'source>, LexerError<'filepath>>> + '_ {
-        std::iter::from_fn(|| match self.next_token() {
-            Ok(Token {
-                kind: TokenKind::EOF,
-                location: _,
-            }) => None,
-            Ok(token) => Some(Ok(token)),
-            Err(error) => Some(Err(error)),
-        })
     }
 }

@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 derive_more = { version = "1.0.0", features = ["full"] }
+lasso = { version = "0.7.3", features = ["multi-threaded"] }
 thiserror = "1.0.63"

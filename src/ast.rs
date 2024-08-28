@@ -1,31 +1,31 @@
-use derive_more::derive::Display;
-
 use crate::lexer::{Location, Token, TokenKind};
+use derive_more::derive::Display;
+use lasso::Spur;
 use std::num::NonZero;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AstKind<'filepath, 'source> {
-    Expression(AstExpression<'filepath, 'source>),
+pub enum AstKind {
+    Expression(AstExpression),
     Let {
-        pattern: AstPattern<'filepath, 'source>,
-        equals: Location<'filepath>,
-        value: Box<AstExpression<'filepath, 'source>>,
+        pattern: AstPattern,
+        equals: Location,
+        value: Box<AstExpression>,
     },
     Function {
-        name: Token<'filepath, 'source>,
-        arguments: Vec<AstPattern<'filepath, 'source>>,
-        return_type: Option<Box<AstExpression<'filepath, 'source>>>,
-        body: AstExpression<'filepath, 'source>,
+        name: Token,
+        arguments: Vec<AstPattern>,
+        return_type: Option<Box<AstExpression>>,
+        body: AstExpression,
     },
     Return {
-        expression: AstExpression<'filepath, 'source>,
+        expression: AstExpression,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ast<'filepath, 'source> {
-    pub kind: AstKind<'filepath, 'source>,
-    pub location: Location<'filepath>,
+pub struct Ast {
+    pub kind: AstKind,
+    pub location: Location,
 }
 
 #[derive(Debug, Display, Clone, PartialEq, Eq)]
@@ -41,7 +41,7 @@ pub enum BinaryOperator {
 }
 
 impl BinaryOperator {
-    pub fn from_token_kind(kind: TokenKind<'_>) -> Option<BinaryOperator> {
+    pub fn from_token_kind(kind: TokenKind) -> Option<BinaryOperator> {
         Some(match kind {
             TokenKind::Plus => BinaryOperator::Add,
             TokenKind::Minus => BinaryOperator::Subtract,
@@ -71,41 +71,41 @@ impl BinaryOperator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AstExpressionKind<'filepath, 'source> {
-    Name(&'source str),
+pub enum AstExpressionKind {
+    Name(Spur),
     Integer(u64),
     Binary {
-        left: Box<AstExpression<'filepath, 'source>>,
+        left: Box<AstExpression>,
         operator: BinaryOperator,
-        right: Box<AstExpression<'filepath, 'source>>,
+        right: Box<AstExpression>,
     },
     Block {
-        statements: Vec<Ast<'filepath, 'source>>,
-        close_brace: Location<'filepath>,
+        statements: Vec<Ast>,
+        close_brace: Location,
     },
     Call {
-        operand: Box<AstExpression<'filepath, 'source>>,
-        arguments: Vec<AstExpression<'filepath, 'source>>,
-        close_parenthesis: Location<'filepath>,
+        operand: Box<AstExpression>,
+        arguments: Vec<AstExpression>,
+        close_parenthesis: Location,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AstExpression<'filepath, 'source> {
-    pub kind: AstExpressionKind<'filepath, 'source>,
-    pub location: Location<'filepath>,
+pub struct AstExpression {
+    pub kind: AstExpressionKind,
+    pub location: Location,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AstPatternKind<'filepath, 'source> {
+pub enum AstPatternKind {
     Let {
-        name_token: Token<'filepath, 'source>,
-        typ: Option<AstExpression<'filepath, 'source>>,
+        name_token: Token,
+        typ: Option<AstExpression>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AstPattern<'filepath, 'source> {
-    pub kind: AstPatternKind<'filepath, 'source>,
-    pub location: Location<'filepath>,
+pub struct AstPattern {
+    pub kind: AstPatternKind,
+    pub location: Location,
 }

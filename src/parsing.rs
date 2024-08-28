@@ -1,36 +1,36 @@
-use std::num::NonZero;
-
 use crate::{
     ast::{
         Ast, AstExpression, AstExpressionKind, AstKind, AstPattern, AstPatternKind, BinaryOperator,
     },
     lexer::{Lexer, LexerError, LexerErrorKind, Location, Token, TokenKind},
 };
+use lasso::Spur;
+use std::num::NonZero;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ParseErrorKind<'source> {
+pub enum ParseErrorKind {
     #[error("{0}")]
     LexerError(LexerErrorKind),
     #[error("Unexpected token '{0}'")]
-    UnexpectedToken(TokenKind<'source>),
+    UnexpectedToken(TokenKind),
     #[error("Expected global item but got '{0}'")]
-    ExpectedGlobalItem(TokenKind<'source>),
+    ExpectedGlobalItem(TokenKind),
     #[error("Expected expression but got '{0}'")]
-    ExpectedExpression(TokenKind<'source>),
+    ExpectedExpression(TokenKind),
     #[error("Expected pattern but got '{0}'")]
-    ExpectedPattern(TokenKind<'source>),
+    ExpectedPattern(TokenKind),
 }
 
 #[derive(Debug, Error)]
 #[error("{location}: {kind}")]
-pub struct ParseError<'filepath, 'source> {
-    pub kind: ParseErrorKind<'source>,
-    pub location: Location<'filepath>,
+pub struct ParseError {
+    pub kind: ParseErrorKind,
+    pub location: Location,
 }
 
-impl<'filepath, 'source> From<LexerError<'filepath>> for ParseError<'filepath, 'source> {
-    fn from(error: LexerError<'filepath>) -> Self {
+impl From<LexerError> for ParseError {
+    fn from(error: LexerError) -> Self {
         Self {
             kind: ParseErrorKind::LexerError(error.kind),
             location: error.location,
@@ -38,10 +38,7 @@ impl<'filepath, 'source> From<LexerError<'filepath>> for ParseError<'filepath, '
     }
 }
 
-pub fn parse<'filepath, 'source>(
-    filepath: &'filepath str,
-    source: &'source str,
-) -> Result<Vec<Ast<'filepath, 'source>>, ParseError<'filepath, 'source>> {
+pub fn parse(filepath: Spur, source: &str) -> Result<Vec<Ast>, ParseError> {
     let lexer = &mut Lexer::new(filepath, source);
     let mut statements = vec![];
     while !matches!(lexer.peek_token()?.kind, TokenKind::EOF) {
@@ -63,9 +60,7 @@ macro_rules! expect_token {
     };
 }
 
-pub fn parse_global<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-) -> Result<Ast<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_global(lexer: &mut Lexer<'_>) -> Result<Ast, ParseError> {
     Ok(match lexer.next_token()? {
         Token {
             kind: TokenKind::Fn,
@@ -81,9 +76,7 @@ pub fn parse_global<'filepath, 'source>(
     })
 }
 
-pub fn parse_statement<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-) -> Result<Ast<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_statement(lexer: &mut Lexer<'_>) -> Result<Ast, ParseError> {
     let start_location = lexer.location();
     Ok(match lexer.peek_token()?.kind {
         TokenKind::Fn => {
@@ -127,10 +120,7 @@ pub fn parse_statement<'filepath, 'source>(
     })
 }
 
-pub fn parse_fn<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-    fn_location: Location<'filepath>,
-) -> Result<Ast<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_fn(lexer: &mut Lexer<'_>, fn_location: Location) -> Result<Ast, ParseError> {
     let name = expect_token!(lexer, TokenKind::Name(_))?;
 
     expect_token!(lexer, TokenKind::OpenParenthesis)?;
@@ -163,9 +153,7 @@ pub fn parse_fn<'filepath, 'source>(
     })
 }
 
-pub fn parse_primary_expression<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-) -> Result<AstExpression<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_primary_expression(lexer: &mut Lexer<'_>) -> Result<AstExpression, ParseError> {
     Ok(match lexer.next_token()? {
         Token {
             kind: TokenKind::Integer(value),
@@ -206,10 +194,10 @@ pub fn parse_primary_expression<'filepath, 'source>(
     })
 }
 
-pub fn parse_binary_expression<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
+pub fn parse_binary_expression(
+    lexer: &mut Lexer<'_>,
     parent_precedence: Option<NonZero<u8>>,
-) -> Result<AstExpression<'filepath, 'source>, ParseError<'filepath, 'source>> {
+) -> Result<AstExpression, ParseError> {
     let mut left = parse_primary_expression(lexer)?;
 
     loop {
@@ -257,16 +245,14 @@ pub fn parse_binary_expression<'filepath, 'source>(
     Ok(left)
 }
 
-pub fn parse_expression<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-) -> Result<AstExpression<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_expression(lexer: &mut Lexer<'_>) -> Result<AstExpression, ParseError> {
     parse_binary_expression(lexer, None)
 }
 
-pub fn parse_block<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-    open_brace_location: Option<Location<'filepath>>,
-) -> Result<AstExpression<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_block(
+    lexer: &mut Lexer<'_>,
+    open_brace_location: Option<Location>,
+) -> Result<AstExpression, ParseError> {
     let location = if let Some(location) = open_brace_location {
         location
     } else {
@@ -286,10 +272,7 @@ pub fn parse_block<'filepath, 'source>(
     })
 }
 
-pub fn parse_pattern<'filepath, 'source>(
-    lexer: &mut Lexer<'filepath, 'source>,
-    requires_let: bool,
-) -> Result<AstPattern<'filepath, 'source>, ParseError<'filepath, 'source>> {
+pub fn parse_pattern(lexer: &mut Lexer<'_>, requires_let: bool) -> Result<AstPattern, ParseError> {
     Ok(match lexer.next_token()? {
         Token {
             kind: TokenKind::Let,
