@@ -27,11 +27,13 @@ impl Deref for InternedStr {
 unsafe impl Key for InternedStr {
     fn into_usize(self) -> usize {
         // SAFETY: the only way this type is constructed is through `Self::try_from_usize`, so the value must fit in a usize
-        unsafe { self.0.get().try_into().unwrap_unchecked() }
+        unsafe { (self.0.get() ^ IdType::MAX).try_into().unwrap_unchecked() }
     }
 
     fn try_from_usize(int: usize) -> Option<Self> {
-        Some(InternedStr(NonZero::new(IdType::try_from(int).ok()?)?))
+        Some(InternedStr(NonZero::new(
+            IdType::try_from(int).ok()? ^ IdType::MAX,
+        )?))
     }
 }
 
