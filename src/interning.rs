@@ -12,7 +12,7 @@ impl From<&str> for InternedStr {
     fn from(s: &str) -> Self {
         InternedStr(
             INTERNER
-                .get_or_init(|| InternerType::with_hasher(FxBuildHasher))
+                .get_or_init(|| ThreadedRodeo::with_hasher(Default::default()))
                 .get_or_intern(s),
         )
     }
@@ -30,5 +30,4 @@ impl Deref for InternedStr {
     }
 }
 
-type InternerType = ThreadedRodeo<Spur, FxBuildHasher>;
-static INTERNER: OnceLock<InternerType> = OnceLock::new();
+static INTERNER: OnceLock<ThreadedRodeo<Spur, FxBuildHasher>> = OnceLock::new();
