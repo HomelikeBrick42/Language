@@ -12,7 +12,7 @@ impl From<&str> for InternedStr {
     fn from(s: &str) -> Self {
         InternedStr(
             INTERNER
-                .get_or_init(|| ThreadedRodeo::with_hasher(Default::default()))
+                .get_or_init(|| ThreadedRodeo::with_hasher(FxBuildHasher))
                 .get_or_intern(s),
         )
     }
