@@ -6,13 +6,15 @@ use std::{num::NonZero, ops::Deref, sync::OnceLock};
 type IdType = u32;
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash)]
-#[display("{}", INTERNER[*self])]
-#[debug("{:?}", INTERNER[*self])]
+#[display("{}", self as &str)]
+#[debug("{:?}", self as &str)]
 pub struct InternedStr(NonZero<IdType>);
 
 impl From<&str> for InternedStr {
     fn from(s: &str) -> Self {
-        INTERNER.get_or_intern(s)
+        INTERNER
+            .get_or_init(|| ThreadedRodeo::with_hasher(FxBuildHasher))
+            .get_or_intern(s)
     }
 }
 
@@ -20,13 +22,14 @@ impl Deref for InternedStr {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        &INTERNER[*self]
+        // Safety: if this type is constructed then INTERNER should be initialized
+        unsafe { &INTERNER.get().unwrap_unchecked()[*self] }
     }
 }
 
 unsafe impl Key for InternedStr {
     fn into_usize(self) -> usize {
-        // SAFETY: the only way this type is constructed is through `Self::try_from_usize`, so the value must fit in a usize
+        // Safety: the only way this type is constructed is through `Self::try_from_usize`, so the value must fit in a usize
         unsafe { (self.0.get() ^ IdType::MAX).try_into().unwrap_unchecked() }
     }
 
@@ -37,16 +40,4 @@ unsafe impl Key for InternedStr {
     }
 }
 
-struct Interner(());
-
-type InternerType = ThreadedRodeo<InternedStr, FxBuildHasher>;
-impl Deref for Interner {
-    type Target = InternerType;
-
-    fn deref(&self) -> &Self::Target {
-        static INTERNER: OnceLock<InternerType> = OnceLock::new();
-        INTERNER.get_or_init(|| ThreadedRodeo::with_hasher(FxBuildHasher))
-    }
-}
-
-static INTERNER: Interner = Interner(());
+static INTERNER: OnceLock<ThreadedRodeo<InternedStr, FxBuildHasher>> = OnceLock::new();
