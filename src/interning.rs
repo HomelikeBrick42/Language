@@ -1,12 +1,14 @@
 use derive_more::derive::{Debug, Display};
 use lasso::{Key, ThreadedRodeo};
 use rustc_hash::FxBuildHasher;
-use std::{ops::Deref, sync::OnceLock};
+use std::{num::NonZero, ops::Deref, sync::OnceLock};
+
+type IdType = u32;
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[display("{}", INTERNER[*self])]
 #[debug("{:?}", INTERNER[*self])]
-pub struct InternedStr(usize);
+pub struct InternedStr(NonZero<IdType>);
 
 impl From<&str> for InternedStr {
     fn from(s: &str) -> Self {
@@ -24,11 +26,12 @@ impl Deref for InternedStr {
 
 unsafe impl Key for InternedStr {
     fn into_usize(self) -> usize {
-        self.0
+        // SAFETY: the only way this type is constructed is through `Self::try_from_usize`, so the value must fit in a usize
+        unsafe { self.0.get().try_into().unwrap_unchecked() }
     }
 
     fn try_from_usize(int: usize) -> Option<Self> {
-        Some(InternedStr(int))
+        Some(InternedStr(NonZero::new(IdType::try_from(int).ok()?)?))
     }
 }
 
