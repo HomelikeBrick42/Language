@@ -5,7 +5,7 @@ use std::{num::NonZero, ops::Deref, sync::OnceLock};
 
 type IdType = u32;
 
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash)]
 #[display("{}", INTERNER[*self])]
 #[debug("{:?}", INTERNER[*self])]
 pub struct InternedStr(NonZero<IdType>);
