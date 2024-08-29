@@ -23,7 +23,10 @@ impl Deref for InternedStr {
 
     fn deref(&self) -> &Self::Target {
         // SAFETY: if this type is constructed, then `INTERNER` has already been initialized by `Self::from`
-        unsafe { INTERNER.get().unwrap_unchecked() }.resolve(&self.0)
+        let interner = unsafe { INTERNER.get().unwrap_unchecked() };
+
+        // SAFETY: if this type has been constructed, then `self.0` was retrieved from `INTERNER` so it will be resolved
+        unsafe { interner.try_resolve(&self.0).unwrap_unchecked() }
     }
 }
 
