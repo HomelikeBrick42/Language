@@ -5,20 +5,24 @@ pub mod lexer;
 pub mod parsing;
 pub mod pretty_printing;
 
-use lasso::{Spur, ThreadedRodeo};
-use rustc_hash::FxBuildHasher;
-use std::{ops::Deref, sync::OnceLock};
+mod interner {
+    use lasso::{Spur, ThreadedRodeo};
+    use rustc_hash::FxBuildHasher;
+    use std::{ops::Deref, sync::OnceLock};
 
-pub struct Interner(());
+    pub struct Interner(());
 
-type InternerType = ThreadedRodeo<Spur, FxBuildHasher>;
-impl Deref for Interner {
-    type Target = InternerType;
+    type InternerType = ThreadedRodeo<Spur, FxBuildHasher>;
+    impl Deref for Interner {
+        type Target = InternerType;
 
-    fn deref(&self) -> &Self::Target {
-        static INTERNER: OnceLock<InternerType> = OnceLock::new();
-        INTERNER.get_or_init(|| ThreadedRodeo::with_hasher(FxBuildHasher))
+        fn deref(&self) -> &Self::Target {
+            static INTERNER: OnceLock<InternerType> = OnceLock::new();
+            INTERNER.get_or_init(|| ThreadedRodeo::with_hasher(FxBuildHasher))
+        }
     }
+
+    pub static INTERNER: Interner = Interner(());
 }
 
-pub static INTERNER: Interner = Interner(());
+pub use interner::INTERNER;
