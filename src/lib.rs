@@ -9,7 +9,7 @@ use lasso::{Spur, ThreadedRodeo};
 use rustc_hash::FxBuildHasher;
 use std::{ops::Deref, sync::OnceLock};
 
-pub struct Interner;
+pub struct Interner(());
 
 type InternerType = ThreadedRodeo<Spur, FxBuildHasher>;
 impl Deref for Interner {
@@ -21,4 +21,4 @@ impl Deref for Interner {
     }
 }
 
-pub static INTERNER: Interner = Interner;
+pub static INTERNER: Interner = Interner(());
