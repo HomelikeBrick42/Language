@@ -1,4 +1,4 @@
-use lang::{parsing::parse, pretty_printing::pretty_print_ast, INTERNER};
+use lang::{parsing::parse, pretty_printing::pretty_print_ast};
 
 fn main() {
     let filepath = "test.lang";
@@ -13,7 +13,7 @@ fn foo(param) -> int {
     return 10 / param - (z - 5);
 }
 ";
-    let asts = parse(INTERNER.get_or_intern(filepath), source).unwrap_or_else(|error| {
+    let asts = parse(filepath.into(), source).unwrap_or_else(|error| {
         eprintln!("{error}");
         std::process::exit(1)
     });

@@ -1,6 +1,8 @@
-use crate::lexer::{Location, Token, TokenKind};
+use crate::{
+    interning::InternedStr,
+    lexer::{Location, Token, TokenKind},
+};
 use derive_more::derive::Display;
-use lasso::Spur;
 use std::num::NonZero;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,7 +74,7 @@ impl BinaryOperator {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AstExpressionKind {
-    Name(Spur),
+    Name(InternedStr),
     Integer(u64),
     Binary {
         left: Box<AstExpression>,

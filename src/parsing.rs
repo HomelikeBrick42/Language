@@ -2,9 +2,9 @@ use crate::{
     ast::{
         Ast, AstExpression, AstExpressionKind, AstKind, AstPattern, AstPatternKind, BinaryOperator,
     },
+    interning::InternedStr,
     lexer::{Lexer, LexerError, LexerErrorKind, Location, Token, TokenKind},
 };
-use lasso::Spur;
 use std::num::NonZero;
 use thiserror::Error;
 
@@ -38,7 +38,7 @@ impl From<LexerError> for ParseError {
     }
 }
 
-pub fn parse(filepath: Spur, source: &str) -> Result<Vec<Ast>, ParseError> {
+pub fn parse(filepath: InternedStr, source: &str) -> Result<Vec<Ast>, ParseError> {
     let lexer = &mut Lexer::new(filepath, source);
     let mut statements = vec![];
     while !matches!(lexer.peek_token()?.kind, TokenKind::EOF) {

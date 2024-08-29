@@ -1,13 +1,12 @@
-use crate::INTERNER;
+use crate::interning::InternedStr;
 use derive_more::derive::Display;
-use lasso::Spur;
 use std::{iter::Peekable, num::NonZero, str::CharIndices};
 use thiserror::Error;
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
-#[display("{}:{line}:{column}", &INTERNER[*filepath])]
+#[display("{filepath}:{line}:{column}")]
 pub struct Location {
-    pub filepath: Spur,
+    pub filepath: InternedStr,
     pub position: usize,
     pub line: NonZero<usize>, // TODO: replace this with some sort of span map
     pub column: NonZero<usize>,
@@ -17,8 +16,8 @@ pub struct Location {
 pub enum TokenKind {
     #[display("{{end of file}}")]
     EOF,
-    #[display("{}", &INTERNER[*_0])]
-    Name(Spur),
+    #[display("{_0}")]
+    Name(InternedStr),
     #[display("{_0}")]
     Integer(u64),
     #[display("let")]
@@ -86,7 +85,7 @@ pub struct Lexer<'source> {
 }
 
 impl<'source> Lexer<'source> {
-    pub fn new(filepath: Spur, source: &'source str) -> Self {
+    pub fn new(filepath: InternedStr, source: &'source str) -> Self {
         Self {
             location: Location {
                 filepath,
@@ -170,7 +169,7 @@ impl<'source> Lexer<'source> {
                             "let" => TokenKind::Let,
                             "fn" => TokenKind::Fn,
                             "return" => TokenKind::Return,
-                            name => TokenKind::Name(INTERNER.get_or_intern(name)),
+                            name => TokenKind::Name(name.into()),
                         }
                     }
 

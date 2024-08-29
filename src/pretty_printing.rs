@@ -1,7 +1,6 @@
 use crate::{
     ast::{Ast, AstExpression, AstExpressionKind, AstKind, AstPattern, AstPatternKind},
     lexer::TokenKind,
-    INTERNER,
 };
 use std::io::{Result, Write};
 
@@ -64,7 +63,7 @@ pub fn pretty_print_ast_expression(
     writer: &mut (impl Write + ?Sized),
 ) -> Result<()> {
     match expression.kind {
-        AstExpressionKind::Name(name) => write!(writer, "{}", &INTERNER[name])?,
+        AstExpressionKind::Name(name) => write!(writer, "{name}")?,
         AstExpressionKind::Integer(value) => write!(writer, "{value}")?,
         AstExpressionKind::Binary {
             ref left,
@@ -120,7 +119,7 @@ pub fn pretty_print_ast_pattern(
             let TokenKind::Name(name) = name_token.kind else {
                 unreachable!();
             };
-            write!(writer, "{}", &INTERNER[name])?;
+            write!(writer, "{name}")?;
             if let Some(typ) = typ {
                 write!(writer, ": ")?;
                 pretty_print_ast_expression(typ, indent, writer)?;
