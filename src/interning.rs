@@ -17,7 +17,7 @@ impl InternedStr {
         )
     }
 
-    pub fn to_str(&self) -> &'static str {
+    pub fn to_str(self) -> &'static str {
         // SAFETY: if this type is constructed, then `INTERNER` has already been initialized by `Self::intern`
         let interner = unsafe { INTERNER.get().unwrap_unchecked() };
 
