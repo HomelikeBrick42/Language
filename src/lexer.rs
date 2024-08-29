@@ -9,7 +9,7 @@ use thiserror::Error;
 pub struct Location {
     pub filepath: Spur,
     pub position: usize,
-    pub line: NonZero<usize>,
+    pub line: NonZero<usize>, // TODO: replace this with some sort of span map
     pub column: NonZero<usize>,
 }
 
